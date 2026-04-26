@@ -11,6 +11,7 @@ import Projects from './pages/Projects';
 import DailyGoals from './pages/DailyGoals';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
+import BookReading from './pages/BookReading';
 import Sidebar from './components/Sidebar';
 
 const ProtectedRoute = ({ children }) => {
@@ -92,6 +93,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <AppLayout><Analytics /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/books"
+        element={
+          <ProtectedRoute>
+            <AppLayout><BookReading /></AppLayout>
           </ProtectedRoute>
         }
       />

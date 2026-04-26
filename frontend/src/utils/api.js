@@ -64,6 +64,16 @@ export const getGoalHistory = (days) => API.get('/goals/history', { params: { da
 // Analytics
 export const getAnalyticsOverview = () => API.get('/analytics/overview');
 
+// Books
+export const getBooks = () => API.get('/books');
+export const addBook = (data) => API.post('/books', data);
+export const updateBook = (id, data) => API.put(`/books/${id}`, data);
+export const deleteBook = (id) => API.delete(`/books/${id}`);
+export const getBookNotes = (bookId) => API.get(`/books/${bookId}/notes`);
+export const addBookNote = (bookId, data) => API.post(`/books/${bookId}/notes`, data);
+export const updateBookNote = (bookId, noteId, data) => API.put(`/books/${bookId}/notes/${noteId}`, data);
+export const deleteBookNote = (bookId, noteId) => API.delete(`/books/${bookId}/notes/${noteId}`);
+
 export const authAPI = {
   getNotifications,
   updateProfile,

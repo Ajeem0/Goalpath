@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   FiBarChart2,
+  FiBook,
   FiCalendar,
   FiGrid,
   FiLogOut,
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { to: '/dsa', icon: FiTarget, label: 'DSA Practice' },
   { to: '/dbms', icon: FiZap, label: 'DBMS Analysis' },
   { to: '/projects', icon: FiTrendingUp, label: 'Projects' },
+  { to: '/books', icon: FiBook, label: 'Book Reading' },
   { to: '/analytics', icon: FiBarChart2, label: 'Analytics' },
 ];
 
