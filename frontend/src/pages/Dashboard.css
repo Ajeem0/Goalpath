@@ -19,6 +19,17 @@
   gap: 1rem;
 }
 
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
 .dashboard-header h1 {
   font-size: 1.6rem;
   font-weight: 800;
@@ -66,14 +77,61 @@
   gap: 1.5rem;
 }
 
+.dashboard-interactive {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
 @media (max-width: 900px) {
   .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-interactive { grid-template-columns: 1fr; }
+  .header-right { align-items: stretch; width: 100%; }
 }
 
 .section-title {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.pulse-card {
+  min-height: 146px;
+}
+
+.quick-chip-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.quick-chip {
+  border: 1px solid var(--border-bright);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+}
+
+.quick-chip.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+}
+
+.quick-action-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* Daily goals card */

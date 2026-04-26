@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || '/api',
+  timeout: 10000,
 });
 
 API.interceptors.request.use((config) => {
@@ -16,7 +17,7 @@ API.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('goalpath_token');
       localStorage.removeItem('goalpath_user');
-      window.location.href = '/login';
+      window.location.href = '/auth';
     }
     return Promise.reject(err);
   }
@@ -57,6 +58,7 @@ export const updateFeature = (projectId, featureId, data) =>
 export const getTodayGoals = () => API.get('/goals/today');
 export const addGoal = (data) => API.post('/goals/today/add', data);
 export const completeGoal = (goalId) => API.put(`/goals/today/${goalId}/complete`);
+export const deleteGoal = (goalId) => API.delete(`/goals/today/${goalId}`);
 export const getGoalHistory = (days) => API.get('/goals/history', { params: { days } });
 
 // Analytics

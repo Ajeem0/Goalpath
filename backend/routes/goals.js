@@ -83,6 +83,9 @@ const computeStreakPreview = (user, completedDate) => {
   };
 };
 
+const normalizeGoalTitle = (title = '') =>
+  title.trim().toLowerCase().replace(/\s+/g, ' ');
+
 // Default goals generator based on user profile
 const generateDefaultGoals = (user) => {
   const goals = [];
@@ -158,12 +161,46 @@ router.post('/today/add', protect, async (req, res) => {
     const today = getToday();
     const { type, title, description, xpReward } = req.body;
 
+    const cleanedTitle = (title || '').trim();
+    if (!cleanedTitle) {
+      return res.status(400).json({ message: 'Goal title is required' });
+    }
+
     let dailyGoal = await DailyGoal.findOne({ user: req.user._id, date: today });
     if (!dailyGoal) {
       dailyGoal = await DailyGoal.create({ user: req.user._id, date: today, goals: [] });
     }
 
-    dailyGoal.goals.push({ type, title, description, xpReward: xpReward || 10 });
+    const nextTitle = normalizeGoalTitle(cleanedTitle);
+    const isDuplicate = (dailyGoal.goals || []).some((g) => normalizeGoalTitle(g.title) === nextTitle);
+    if (isDuplicate) {
+      return res.status(409).json({ message: 'This goal already exists for today' });
+    }
+
+    dailyGoal.goals.push({ type, title: cleanedTitle, description, xpReward: xpReward || 10 });
+    await dailyGoal.save();
+    res.json(dailyGoal);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// @route   DELETE /api/goals/today/:goalId
+router.delete('/today/:goalId', protect, async (req, res) => {
+  try {
+    const today = getToday();
+    const dailyGoal = await DailyGoal.findOne({ user: req.user._id, date: today });
+    if (!dailyGoal) return res.status(404).json({ message: 'No goals for today' });
+
+    const idx = (dailyGoal.goals || []).findIndex((g) => g._id === req.params.goalId);
+    if (idx < 0) return res.status(404).json({ message: 'Goal not found' });
+
+    const goal = dailyGoal.goals[idx];
+    if (goal.completed) {
+      return res.status(400).json({ message: 'Completed goals cannot be removed' });
+    }
+
+    dailyGoal.goals.splice(idx, 1);
     await dailyGoal.save();
     res.json(dailyGoal);
   } catch (err) {

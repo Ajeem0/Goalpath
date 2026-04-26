@@ -62,7 +62,7 @@ goalpath/
 ## ⚙️ Prerequisites
 
 - Node.js v18+
-- MongoDB (local or Atlas)
+- PostgreSQL (local, Neon, Supabase, etc.)
 - npm or yarn
 
 ---
@@ -86,13 +86,14 @@ Create a `.env` file:
 
 ```env
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/goalpath
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/goalpath
+PGSSLMODE=disable
 JWT_SECRET=your_super_secret_key_here_change_this
 NODE_ENV=development
 ```
 
-> For MongoDB Atlas, replace MONGO_URI with your connection string:
-> `mongodb+srv://<user>:<pass>@cluster.mongodb.net/goalpath?retryWrites=true&w=majority`
+> For hosted PostgreSQL (Neon/Supabase/etc.), set SSL mode to require:
+> `PGSSLMODE=require`
 
 Start the backend:
 

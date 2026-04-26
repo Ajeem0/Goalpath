@@ -8,6 +8,43 @@ const { protect } = require('../middleware/auth');
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
+const formatDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const getPreviousDate = (dateStr) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() - 1);
+  return formatDate(date);
+};
+
+const toIsoDate = (value) => {
+  if (!value) return null;
+  return formatDate(new Date(value));
+};
+
+const updateStreakOnLogin = (user) => {
+  const today = formatDate(new Date());
+  const lastActiveDate = toIsoDate(user.lastActiveDate);
+
+  if (lastActiveDate === today) {
+    return false;
+  }
+
+  if (lastActiveDate === getPreviousDate(today)) {
+    user.streak = (user.streak || 0) + 1;
+  } else {
+    user.streak = 1;
+  }
+
+  user.lastActiveDate = new Date(`${today}T12:00:00.000Z`);
+  return true;
+};
+
 // @route   POST /api/auth/register
 // @desc    Register a new user
 router.post(
@@ -76,6 +113,10 @@ router.post(
       const user = await User.findOne({ email });
       if (!user || !(await user.matchPassword(password))) {
         return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      if (updateStreakOnLogin(user)) {
+        await user.save();
       }
 
       res.json({

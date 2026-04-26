@@ -4,10 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { getAnalyticsOverview, getTodayGoals, completeGoal } from '../utils/api';
 import toast from 'react-hot-toast';
 import {
+  FiActivity,
   FiBarChart2,
   FiCalendar,
   FiCheckSquare,
+  FiCoffee,
   FiGrid,
+  FiRefreshCw,
   FiSquare,
   FiTarget,
   FiTrendingUp,
@@ -23,13 +26,21 @@ export default function Dashboard() {
   const [overview, setOverview] = useState(null);
   const [goals, setGoals] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [suggestionFilter, setSuggestionFilter] = useState('All');
+  const [recentDifficulty, setRecentDifficulty] = useState('All');
+  const [energyState, setEnergyState] = useState(() => localStorage.getItem('goalpath_energy_state') || 'Locked In');
+
+  const loadDashboard = async () => {
+    const [ovRes, goalRes] = await Promise.all([getAnalyticsOverview(), getTodayGoals()]);
+    setOverview(ovRes.data);
+    setGoals(goalRes.data);
+  };
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [ovRes, goalRes] = await Promise.all([getAnalyticsOverview(), getTodayGoals()]);
-        setOverview(ovRes.data);
-        setGoals(goalRes.data);
+        await loadDashboard();
       } catch (e) {
         console.error(e);
       } finally {
@@ -38,6 +49,24 @@ export default function Dashboard() {
     };
     load();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadDashboard();
+      await refreshUser();
+      toast.success('Dashboard refreshed');
+    } catch (e) {
+      toast.error('Could not refresh dashboard');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleSetEnergy = (nextState) => {
+    setEnergyState(nextState);
+    localStorage.setItem('goalpath_energy_state', nextState);
+  };
 
   const handleCompleteGoal = async (goalId) => {
     try {
@@ -62,6 +91,14 @@ export default function Dashboard() {
   const completedGoals = goals?.goals?.filter((g) => g.completed).length || 0;
   const totalGoals = goals?.goals?.length || 0;
   const goalProgress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+  const allSuggestions = overview?.suggestions || [];
+  const filteredSuggestions = suggestionFilter === 'All'
+    ? allSuggestions
+    : allSuggestions.filter((s) => s.type === suggestionFilter);
+  const allRecent = overview?.dsa?.recentProblems || [];
+  const filteredRecent = recentDifficulty === 'All'
+    ? allRecent
+    : allRecent.filter((p) => p.difficulty === recentDifficulty);
 
   return (
     <div className="dashboard">
@@ -71,10 +108,15 @@ export default function Dashboard() {
           <h1>Good {getGreeting()}, {user?.name?.split(' ')[0]}.</h1>
           <p>{todayDate}</p>
         </div>
-        <div className="header-badges">
-          {overview?.user?.badges?.slice(-3).map((b, i) => (
-            <span key={i} className="badge-chip">{b.name}</span>
-          ))}
+        <div className="header-right">
+          <button className="btn btn-outline btn-sm" onClick={handleRefresh} disabled={refreshing}>
+            <FiRefreshCw className={refreshing ? 'spin' : ''} /> {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <div className="header-badges">
+            {overview?.user?.badges?.slice(-3).map((b, i) => (
+              <span key={i} className="badge-chip">{b.name}</span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -84,6 +126,40 @@ export default function Dashboard() {
         <StatCard icon={<BsFire />} label="Day Streak" value={user?.streak || 0} color="orange" />
         <StatCard icon={<FiTarget />} label="DSA Solved" value={overview?.dsa?.total || 0} color="purple" />
         <StatCard icon={<FiGrid />} label="DBMS Done" value={overview?.dbms?.total || 0} color="cyan" />
+      </div>
+
+      {/* Interactive strip */}
+      <div className="dashboard-interactive mb-3">
+        <div className="card pulse-card">
+          <div className="flex-between mb-2">
+            <h2 className="section-title"><FiActivity className="inline-icon" /> Daily Pulse</h2>
+            <span className="tag tag-blue">{energyState}</span>
+          </div>
+          <p className="text-sm text-muted mb-2">How are you feeling before your next session?</p>
+          <div className="quick-chip-row">
+            {['Locked In', 'Steady', 'Need Warmup'].map((state) => (
+              <button
+                key={state}
+                type="button"
+                className={`quick-chip ${energyState === state ? 'active' : ''}`}
+                onClick={() => handleSetEnergy(state)}
+              >
+                {state}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="card pulse-card">
+          <div className="flex-between mb-2">
+            <h2 className="section-title"><FiCoffee className="inline-icon" /> Quick Actions</h2>
+            <span className="tag tag-green">{goalProgress}% on track</span>
+          </div>
+          <div className="quick-action-row">
+            <Link to="/dsa" className="btn btn-primary btn-sm">Solve DSA</Link>
+            <Link to="/goals" className="btn btn-outline btn-sm">Update Goals</Link>
+            <Link to="/analytics" className="btn btn-outline btn-sm">View Insights</Link>
+          </div>
+        </div>
       </div>
 
       <div className="dashboard-grid">
@@ -120,10 +196,24 @@ export default function Dashboard() {
 
         {/* Weak Areas / Suggestions */}
         <div className="card dash-suggestions">
-          <h2 className="section-title mb-2"><FiTrendingUp className="inline-icon" /> Smart Suggestions</h2>
-          {overview?.suggestions?.length > 0 ? (
+          <div className="flex-between mb-2" style={{ gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h2 className="section-title"><FiTrendingUp className="inline-icon" /> Smart Suggestions</h2>
+            <div className="quick-chip-row">
+              {['All', 'DSA', 'DBMS', 'Project'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`quick-chip ${suggestionFilter === type ? 'active' : ''}`}
+                  onClick={() => setSuggestionFilter(type)}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filteredSuggestions.length > 0 ? (
             <div className="suggestions-list">
-              {overview.suggestions.map((s, i) => (
+              {filteredSuggestions.map((s, i) => (
                 <div key={i} className="suggestion-item">
                   <span className={`tag ${s.type === 'DSA' ? 'tag-purple' : s.type === 'DBMS' ? 'tag-cyan' : 'tag-green'}`}>
                     {s.type}
@@ -163,18 +253,32 @@ export default function Dashboard() {
 
         {/* Recent Activity */}
         <div className="card dash-recent">
-          <h2 className="section-title mb-2"><FiZap className="inline-icon" /> Recent Problems</h2>
+          <div className="flex-between mb-2" style={{ gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h2 className="section-title"><FiZap className="inline-icon" /> Recent Problems</h2>
+            <div className="quick-chip-row">
+              {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`quick-chip ${recentDifficulty === level ? 'active' : ''}`}
+                  onClick={() => setRecentDifficulty(level)}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="recent-list">
-            {overview?.dsa?.recentProblems?.map((p, i) => (
+            {filteredRecent.map((p, i) => (
               <div key={i} className="recent-item">
                 <span className={`tag ${DIFF_COLOR[p.difficulty]}`}>{p.difficulty}</span>
                 <span className="recent-title">{p.title}</span>
                 <span className="recent-pattern">{p.patternUsed}</span>
               </div>
             ))}
-            {(!overview?.dsa?.recentProblems?.length) && (
+            {(!filteredRecent.length) && (
               <div className="empty-state">
-                <p>No problems logged yet. Start solving.</p>
+                <p>{allRecent.length ? 'No problems match this filter.' : 'No problems logged yet. Start solving.'}</p>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTodayGoals, addGoal, completeGoal, getGoalHistory } from '../utils/api';
+import { getTodayGoals, addGoal, completeGoal, deleteGoal, getGoalHistory } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import './DailyGoals.css';
@@ -12,6 +12,7 @@ import {
   FiPlus,
   FiSquare,
   FiTarget,
+  FiTrash2,
   FiTrendingUp,
   FiZap,
 } from 'react-icons/fi';
@@ -59,7 +60,22 @@ export default function DailyGoals() {
       setShowAdd(false);
       setNewGoal({ type: 'DSA', title: '', description: '', xpReward: 10 });
       toast.success('Goal added!');
-    } catch (e) { toast.error('Failed to add goal'); }
+    } catch (e) {
+      const message = e.response?.data?.message || 'Failed to add goal';
+      toast.error(message);
+    }
+  };
+
+  const handleRemoveGoal = async (goalId) => {
+    if (!window.confirm('Remove this goal from today?')) return;
+    try {
+      const res = await deleteGoal(goalId);
+      setGoals(res.data);
+      toast.success('Goal removed');
+    } catch (e) {
+      const message = e.response?.data?.message || 'Failed to remove goal';
+      toast.error(message);
+    }
   };
 
   if (loading) return <div className="spinner" />;
@@ -166,6 +182,14 @@ export default function DailyGoals() {
               <span className={`tag ${TYPE_COLORS[g.type]}`}>{g.type}</span>
             </div>
             <div className="goal-full-xp">+{g.xpReward} XP</div>
+            <button
+              className="goal-remove-btn"
+              onClick={() => handleRemoveGoal(g._id)}
+              disabled={g.completed}
+              title={g.completed ? 'Completed goals cannot be removed' : 'Remove goal'}
+            >
+              <FiTrash2 />
+            </button>
           </div>
         ))}
         {total === 0 && (

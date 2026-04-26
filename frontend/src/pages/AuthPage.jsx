@@ -32,7 +32,9 @@ export default function AuthPage() {
       }
       navigate('/');
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Something went wrong';
+      const msg = err.response?.data?.message
+        || err.response?.data?.errors?.[0]?.msg
+        || (err.request ? 'Cannot reach server. Start backend and try again.' : 'Something went wrong');
       toast.error(msg);
     } finally {
       setLoading(false);

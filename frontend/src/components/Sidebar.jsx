@@ -30,7 +30,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/auth');
   };
 
   const xpLevel = Math.floor((user?.xp || 0) / 100) + 1;

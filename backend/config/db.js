@@ -1,8 +1,33 @@
 const { Pool } = require('pg');
 
+if (!process.env.DATABASE_URL) {
+  require('dotenv').config();
+}
+
+const databaseUrl = process.env.DATABASE_URL;
+
+const getSslConfig = () => {
+  const mode = (process.env.PGSSLMODE || '').toLowerCase();
+  const urlRequiresSsl = /sslmode=(require|verify-ca|verify-full)/i.test(databaseUrl || '');
+
+  if (mode === 'disable') {
+    return false;
+  }
+
+  if (mode === 'require' || urlRequiresSsl) {
+    return { rejectUnauthorized: false };
+  }
+
+  return false;
+};
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false,
+  connectionString: databaseUrl,
+  ssl: getSslConfig(),
+});
+
+pool.on('error', (error) => {
+  console.error(`❌ PostgreSQL Pool Error: ${error.message}`);
 });
 
 const createTablesSql = `
@@ -109,6 +134,10 @@ CREATE TABLE IF NOT EXISTS roadmaps (
 
 const connectDB = async () => {
   try {
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is missing. Add it to backend/.env');
+    }
+
     await pool.query('SELECT 1');
     await pool.query(createTablesSql);
     console.log('✅ PostgreSQL Connected');
